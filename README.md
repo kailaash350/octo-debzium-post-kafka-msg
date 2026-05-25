@@ -1,15 +1,11 @@
 # Banking CDC Pipeline - Learning Guide
 
-## 🎯 What You'll Learn
-
-This hands-on project teaches you Change Data Capture (CDC) fundamentals through a realistic banking scenario:
-
 - **CDC Basics**: How database changes become events in real-time
 - **Debezium**: Industry-standard CDC tool for capturing database changes
 - **Kafka**: Event streaming platform used in 80% of Fortune 100 companies
 - **Fintech Patterns**: Transaction tracking, audit trails, and data consistency
 
-## 📋 Architecture Overview
+##  Architecture Overview
 
 ```
 PostgreSQL (Banking DB)
@@ -31,7 +27,7 @@ Your Applications (Consumers)
 6. **Debezium UI** - Web interface to manage CDC connectors (http://localhost:8080)
 7. **Kafka UI** - Visualize topics and messages (http://localhost:8090)
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### Prerequisites
 
