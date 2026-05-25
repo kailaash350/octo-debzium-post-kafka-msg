@@ -1,0 +1,122 @@
+version: '3.8'
+
+services:
+  # PostgreSQL - Source Database (Banking System)
+  postgres:
+    image: postgres:15-alpine
+    container_name: banking-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: bankuser
+      POSTGRES_PASSWORD: bankpass
+      POSTGRES_DB: bankingdb
+    command:
+      - "postgres"
+      - "-c"
+      - "wal_level=logical"  # Required for Debezium CDC
+      - "-c"
+      - "max_wal_senders=1"
+      - "-c"
+      - "max_replication_slots=1"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    networks:
+      - banking-network
+
+  # Zookeeper - Required for Kafka coordination
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: banking-zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - banking-network
+
+  # Kafka - Event Streaming Platform
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: banking-kafka
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+    networks:
+      - banking-network
+
+  # Kafka Connect with Debezium - CDC Engine
+  kafka-connect:
+    image: debezium/connect:2.5
+    container_name: banking-kafka-connect
+    ports:
+      - "8083:8083"
+    depends_on:
+      - kafka
+      - postgres
+    environment:
+      BOOTSTRAP_SERVERS: kafka:29092
+      GROUP_ID: banking-connect-cluster
+      CONFIG_STORAGE_TOPIC: banking_connect_configs
+      OFFSET_STORAGE_TOPIC: banking_connect_offsets
+      STATUS_STORAGE_TOPIC: banking_connect_statuses
+      CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      STATUS_STORAGE_REPLICATION_FACTOR: 1
+      KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      # Enable schemas in JSON (important for understanding event structure)
+      KEY_CONVERTER_SCHEMAS_ENABLE: 'true'
+      VALUE_CONVERTER_SCHEMAS_ENABLE: 'true'
+    networks:
+      - banking-network
+
+  # Debezium UI - Web interface to manage connectors
+  debezium-ui:
+    image: debezium/debezium-ui:2.5
+    container_name: banking-debezium-ui
+    ports:
+      - "8080:8080"
+    depends_on:
+      - kafka-connect
+    environment:
+      KAFKA_CONNECT_URIS: http://kafka-connect:8083
+    networks:
+      - banking-network
+
+  # Kafka UI - Visualize topics and messages
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: banking-kafka-ui
+    ports:
+      - "8090:8080"
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_CLUSTERS_0_NAME: banking-cluster
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+      KAFKA_CLUSTERS_0_KAFKACONNECT_0_NAME: debezium
+      KAFKA_CLUSTERS_0_KAFKACONNECT_0_ADDRESS: http://kafka-connect:8083
+    networks:
+      - banking-network
+
+networks:
+  banking-network:
+    driver: bridge
+
+volumes:
+  postgres-data:

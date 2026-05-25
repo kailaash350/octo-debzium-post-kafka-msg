@@ -1,0 +1,31 @@
+{
+  "name": "banking-postgres-connector",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "database.hostname": "postgres",
+    "database.port": "5432",
+    "database.user": "bankuser",
+    "database.password": "bankpass",
+    "database.dbname": "bankingdb",
+    "database.server.name": "banking",
+    "table.include.list": "public.accounts,public.transactions,public.transfers",
+    "plugin.name": "pgoutput",
+    "publication.autocreate.mode": "filtered",
+    "topic.prefix": "banking",
+    "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "key.converter.schemas.enable": "true",
+    "value.converter.schemas.enable": "true",
+    "transforms": "unwrap",
+    "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
+    "transforms.unwrap.drop.tombstones": "false",
+    "transforms.unwrap.delete.handling.mode": "rewrite",
+    "transforms.unwrap.add.fields": "op,db,table,ts_ms",
+    "snapshot.mode": "initial",
+    "decimal.handling.mode": "double",
+    "time.precision.mode": "adaptive",
+    "include.schema.changes": "false",
+    "heartbeat.interval.ms": "10000",
+    "slot.name": "banking_debezium_slot"
+  }
+}
