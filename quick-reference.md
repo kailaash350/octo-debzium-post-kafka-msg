@@ -1,6 +1,6 @@
 # Quick Reference Guide
 
-## 🚀 Common Commands
+## Common Commands
 
 ### Docker Operations
 
@@ -94,7 +94,7 @@ docker exec -it banking-postgres psql -U bankuser -d bankingdb \
 docker exec -i banking-postgres psql -U bankuser -d bankingdb < my-script.sql
 ```
 
-## 📊 Useful SQL Queries
+## Useful SQL Queries
 
 ### Banking Analytics
 
@@ -190,7 +190,7 @@ WHERE schemaname = 'public'
 ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;
 ```
 
-## 🧪 Testing Scenarios
+## Testing Scenarios
 
 ### Scenario 1: High-Frequency Deposits
 
@@ -246,7 +246,7 @@ UPDATE accounts SET status = 'ACTIVE' WHERE account_number = 'ACC-2024-999';
 UPDATE accounts SET status = 'CLOSED', balance = 0 WHERE account_number = 'ACC-2024-999';
 ```
 
-## 🔧 Troubleshooting Commands
+## Troubleshooting Commands
 
 ### Check Service Health
 
@@ -285,7 +285,7 @@ curl -X POST http://localhost:8083/connectors -H "Content-Type: application/json
 curl http://localhost:8083/connectors/banking-postgres-connector | python -m json.tool
 ```
 
-## 📈 Performance Monitoring
+## Performance Monitoring
 
 ### Kafka Topic Metrics
 
@@ -313,13 +313,13 @@ SELECT
 FROM pg_statio_user_tables;
 ```
 
-## 🌐 Web Interfaces
+## Web Interfaces
 
 - **Kafka UI**: http://localhost:8090
 - **Debezium UI**: http://localhost:8080
 - **Kafka Connect REST API**: http://localhost:8083
 
-## 📱 Python Helper Scripts
+## Python Helper Scripts
 
 ### Quick Balance Check
 

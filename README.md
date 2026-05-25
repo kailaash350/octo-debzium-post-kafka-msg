@@ -5,7 +5,7 @@
 - **Kafka**: Event streaming platform used in 80% of Fortune 100 companies
 - **Fintech Patterns**: Transaction tracking, audit trails, and data consistency
 
-##  Architecture Overview
+## Architecture Overview
 
 ```
 PostgreSQL (Banking DB)
@@ -27,13 +27,7 @@ Your Applications (Consumers)
 6. **Debezium UI** - Web interface to manage CDC connectors (http://localhost:8080)
 7. **Kafka UI** - Visualize topics and messages (http://localhost:8090)
 
-##  Quick Start
-
-### Prerequisites
-
-- Docker Desktop installed on Windows
-- 8GB+ RAM available for Docker
-- Ports available: 5432, 8080, 8083, 8090, 9092, 2181
+## Quick Start
 
 ### Step 1: Start the Pipeline
 
@@ -112,7 +106,7 @@ In Kafka UI (http://localhost:8090):
 3. Set "Seek Type" to "Live" or "Newest"
 4. Watch messages appear in real-time as transactions occur!
 
-## 🔍 Understanding CDC Events
+## Understanding CDC Events
 
 ### Event Structure
 
@@ -133,13 +127,6 @@ Each CDC event contains:
 }
 ```
 
-### Operation Types
-
-- `c` (CREATE) - New record inserted
-- `u` (UPDATE) - Existing record modified
-- `r` (READ) - Initial snapshot when connector starts
-- `d` (DELETE) - Record deleted
-
 ### Try This: Update an Account
 
 Open another terminal and run:
@@ -159,7 +146,7 @@ Check Kafka UI - you'll see an UPDATE event with:
 - `after`: new balance
 - `op`: "u"
 
-## 🎓 Key CDC Concepts
+## Key CDC Concepts
 
 ### 1. Write-Ahead Log (WAL)
 
@@ -190,7 +177,7 @@ Topics follow pattern: `{server.name}.{schema}.{table}`
 
 Kafka guarantees order **within a partition**. Changes to the same record (same key) stay ordered.
 
-## 🧪 Experiments to Try
+## Experiments to Try
 
 ### Experiment 1: Track Balance Changes
 
@@ -230,7 +217,7 @@ UPDATE accounts SET status = 'SUSPENDED' WHERE account_number = 'ACC-2024-003';
 
 See the status change event. Downstream systems can react (freeze transactions, notify customer, etc.).
 
-## 📊 Monitoring & Debugging
+## Monitoring & Debugging
 
 ### Check Connector Health
 
@@ -256,31 +243,25 @@ See what Debezium is tracking:
 SELECT * FROM pg_replication_slots;
 ```
 
-## 🏗️ Extending the Pipeline
+## Planned Extensions
 
-### Next Steps (Progressive Complexity)
-
-#### Level 2: Add Schema Registry
+### Level 2: Add Schema Registry
 - Avro encoding for efficient serialization
 - Schema versioning for backwards compatibility
 - Required for production fintech systems
 
-#### Level 3: Add Stream Processing
+### Level 3: Add Stream Processing
 - KSQLDB for real-time transformations
 - Kafka Streams for fraud detection
 - Aggregate daily transaction volumes
 
-#### Level 4: Add Sink Connectors
+### Level 4: Add Sink Connectors
 - Write to Elasticsearch for search
 - Write to data warehouse (BigQuery, Snowflake)
 - Write to MongoDB for analytics
 
-#### Level 5: Multi-Region Setup
-- Kafka MirrorMaker for replication
-- Active-active disaster recovery
-- Compliance with data residency laws
 
-## 🔐 Fintech Best Practices
+## Fintech Best Practices
 
 ### 1. Audit Trails
 Every change is captured with timestamp and operation type. This meets regulatory requirements.
@@ -300,106 +281,5 @@ CDC reads from WAL, not production tables. Zero query overhead on OLTP database.
 ### 5. Temporal Queries
 With all changes in Kafka, you can answer "what was this account's balance at 2 PM yesterday?"
 
-## 🐛 Troubleshooting
-
-### Connector Won't Start
-
-**Error**: "Replication slot already exists"
-```bash
-docker exec -it banking-postgres psql -U bankuser -d bankingdb -c "SELECT pg_drop_replication_slot('banking_debezium_slot');"
-```
-
-### No Messages in Topics
-
-1. Check connector status (should be "RUNNING")
-2. Check PostgreSQL WAL level: `SHOW wal_level;` (should be "logical")
-3. Make changes to data - snapshot only happens once
-
-### Kafka UI Can't Connect
-
-Wait 60 seconds after `docker-compose up`. Kafka takes time to start.
-
-### Port Already in Use
-
-Edit `docker-compose.yml` and change conflicting ports:
-- PostgreSQL: 5432 → 5433
-- Kafka UI: 8090 → 8091
-
-## 📚 Understanding the Code
-
-### docker-compose.yml
-- Defines all services and how they connect
-- Sets environment variables for configuration
-- Creates persistent volumes for data
-
-### debezium-connector-config.json
-Key settings explained:
-
-```json
-{
-  "table.include.list": "public.accounts,public.transactions,public.transfers",
-  // Only capture changes from these tables
-  
-  "snapshot.mode": "initial",
-  // Take initial snapshot, then stream changes
-  
-  "decimal.handling.mode": "double",
-  // Convert DECIMAL to double (easier for JSON consumers)
-  
-  "transforms": "unwrap",
-  "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
-  // Simplify event structure - extract just before/after/op
-  
-  "slot.name": "banking_debezium_slot"
-  // PostgreSQL replication slot name
-}
-```
-
-### PostgreSQL Schema (01-init-banking-schema.sql)
-- `wal_level=logical`: Enables CDC by writing enough info to WAL
-- UUIDs for globally unique IDs (good for distributed systems)
-- CHECK constraints for data integrity
-- Indexes on foreign keys and status fields
-
-## 🎯 Learning Checkpoints
-
-After completing this project, you should understand:
-
-- ✅ How CDC captures database changes without queries
-- ✅ Why Kafka is used (decoupling, scalability, replay)
-- ✅ Event structure (before, after, operation type)
-- ✅ Exactly-once delivery guarantees
-- ✅ How to monitor CDC pipelines
-- ✅ Fintech use cases for CDC
-
-## 📖 Next Learning Resources
-
-1. **Debezium Tutorial**: https://debezium.io/documentation/reference/tutorial.html
-2. **Kafka Fundamentals**: https://kafka.apache.org/intro
-3. **CDC Design Patterns**: Martin Kleppmann's "Designing Data-Intensive Applications"
-4. **Event Sourcing**: Greg Young's Event Store documentation
-
-## 🛑 Cleanup
-
-Stop all services:
-```bash
-docker-compose down
-```
-
-Remove volumes (deletes all data):
-```bash
-docker-compose down -v
-```
-
-## 💡 Real-World Fintech Use Cases
-
-1. **Fraud Detection**: Stream account changes to ML models for real-time fraud scoring
-2. **Regulatory Reporting**: All transactions captured for audit and compliance
-3. **Real-time Analytics**: Update dashboards as money moves
-4. **Microservices Sync**: Keep read replicas in sync with OLTP database
-5. **Data Warehousing**: Stream changes to Snowflake/BigQuery for analysis
-6. **Event Sourcing**: Build full transaction history for any account
-
----
 
 **Built with**: Debezium 2.5, Kafka 7.5, PostgreSQL 15
